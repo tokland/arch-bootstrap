@@ -2,8 +2,8 @@
 #
 # arch-bootstrap: Bootstrap a base Arch Linux system.
 #
-# Dependencies: coreutils, wget, sed, gawk, tar, gzip, chroot, xz.
-# Bug tracker: http://code.google.com/p/tokland/issues
+# Dependencies: bash >= 4, coreutils, wget, sed, gawk, tar, gzip, chroot, xz.
+# Project: https://github.com/tokland/arch-bootstrap
 # Contact: Arnau Sanchez <tokland@gmail.com>
 #
 # Install:
@@ -19,7 +19,7 @@
 #
 #   $ sudo chroot destination
 
-set -e -o pipefail -u
+set -e -u -o pipefail
 
 # Output to standard error
 stderr() { echo "$@" >&2; }
@@ -33,19 +33,9 @@ extract_href() { sed -n '/<a / s/^.*<a [^>]*href="\([^\"]*\)".*$/\1/p'; }
 # Simple wrapper around wget
 fetch() { wget -c --passive-ftp --quiet "$@"; }
 
-# Packages needed by pacman (see get-pacman-dependencies.sh)
-PACMAN_PACKAGES=(
-  acl archlinux-keyring attr bzip2 curl expat glibc gpgme libarchive
-  libassuan libgpg-error libssh2 lzo2 openssl pacman pacman-mirrorlist xz zlib
-)
-BASIC_PACKAGES=("${PACMAN_PACKAGES[@]}" filesystem)
-EXTRA_PACKAGES=(coreutils bash grep gawk file tar systemd)
-PACKDIR="arch-bootstrap"
-DEFAULT_REPO_URL="http://mirrors.kernel.org/archlinux"
-DEFAULT_ARCH=i686
-
 configure_pacman() {
-  local DEST=$1; local ARCH=$2
+  local DEST=$1 ARCH=$2
+  debug "configure DNS and pacman"
   cp "/etc/resolv.conf" "$DEST/etc/resolv.conf"
   echo "Server = $REPO_URL/\$repo/os/$ARCH" >> "$DEST/etc/pacman.d/mirrorlist"
 }
@@ -76,7 +66,7 @@ check_compressed_integrity() {
 }
 
 uncompress() {
-  local FILEPATH=$1; local DEST=$2
+  local FILEPATH=$1 DEST=$2
   case "$FILEPATH" in
     *.gz) tar xzf "$FILEPATH" -C "$DEST";;
     *.xz) xz -dc "$FILEPATH" | tar x -C "$DEST";;
@@ -85,48 +75,27 @@ uncompress() {
   esac
 }  
 
-usage() {
-  stderr "Usage: $(basename "$0") [-a i686 | x86_64] [-r REPO_URL] DEST"
-}
-
-main() {
-  test $# -eq 0 && set -- "-h"
-  local ARCH=$DEFAULT_ARCH;
-  local REPO_URL=$DEFAULT_REPO_URL
-  while getopts "a:r:h" ARG; do
-    case "$ARG" in
-    a) ARCH=$OPTARG;;
-    r) REPO_URL=$OPTARG;;
-    *) usage; exit 1;;
-    esac
-  done
-  shift $(($OPTIND-1))
-  test $# -eq 1 || { usage; exit 1; }
-  local DEST=$1   
-
-  local REPO="${REPO_URL%/}/core/os/$ARCH"
-  debug "core repository: $REPO"
-  mkdir -p "$PACKDIR"
-  debug "package directory created: $PACKDIR"
-  mkdir -p "$DEST"
-  debug "destination directory created: $DEST"
-
+fetch_packages_list() {
+  local ARCH=$1 REPO=$2 PACKDIR=$3 
   local LIST_HTML_FILE="$PACKDIR/core_os_$ARCH-index.html"
   if ! test -s "$LIST_HTML_FILE"; then 
     debug "fetch packages list: $REPO/"
     # Force trailing '/' needed by FTP servers.
     fetch -O "$LIST_HTML_FILE" "$REPO/" ||
-      { debug "Error: cannot fetch packages list: $REPO"; exit 1; }
+      { debug "Error: cannot fetch packages list: $REPO"; return 1; }
   fi
-
   debug "packages HTML index: $LIST_HTML_FILE"
   local LIST=$(< "$LIST_HTML_FILE" extract_href | awk -F"/" '{print $NF}' | sort -rn)
-  test "$LIST" || { debug "Error processing list file: $LIST_HTML_FILE"; exit 1; }  
+  test "$LIST" || { debug "Error processing list file: $LIST_HTML_FILE"; return 1; }
+  echo "$LIST"  
+}
 
-  debug "pacman package and dependencies: ${BASIC_PACKAGES[*]}"
-  for PACKAGE in ${BASIC_PACKAGES[*]}; do
+fetch_packages() {
+  local PACKDIR=$1 BASIC_PACKAGES=$2 DEST=$3 LIST=$4
+  debug "pacman package and dependencies: $BASIC_PACKAGES"
+  for PACKAGE in $BASIC_PACKAGES; do
     local FILE=$(echo "$LIST" | grep -m1 "^$PACKAGE-[[:digit:]].*\(\.gz\|\.xz\)$")
-    test "$FILE" || { debug "Error: cannot find package: $PACKAGE"; exit 1; }
+    test "$FILE" || { debug "Error: cannot find package: $PACKAGE"; return 1; }
     local FILEPATH="$PACKDIR/$FILE"
     
     if ! test -e "$FILEPATH" || ! check_compressed_integrity "$FILEPATH"; then
@@ -136,19 +105,64 @@ main() {
     debug "uncompress package: $FILEPATH"
     uncompress "$FILEPATH" "$DEST"
   done
+}
 
-  debug "configure DNS and pacman"
+install_packages() {
+  local ARCH=$1 DEST=$2 BASIC_PACKAGES=$3 EXTRA_PACKAGES=$4
+  debug "install packages: $BASIC_PACKAGES $EXTRA_PACKAGES"
+  LC_ALL=C chroot "$DEST" /usr/bin/pacman \
+    --noconfirm --arch $ARCH -Sy --force $BASIC_PACKAGES $EXTRA_PACKAGES
+}
+
+
+usage() {
+  stderr "Usage: $(basename "$0") [-a i686|x86_64] [-r REPO_URL] DEST"
+}
+
+# Packages needed by pacman (see get-pacman-dependencies.sh)
+PACMAN_PACKAGES="
+  acl archlinux-keyring attr bzip2 curl expat glibc gpgme libarchive
+  libassuan libgpg-error libssh2 lzo2 openssl pacman pacman-mirrorlist xz zlib
+"
+BASIC_PACKAGES="$PACMAN_PACKAGES filesystem"
+EXTRA_PACKAGES="coreutils bash grep gawk file tar systemd"
+DEFAULT_REPO_URL="http://mirrors.kernel.org/archlinux"
+DEFAULT_ARCH="i686"
+
+main() {
+  # Process arguments and options
+  test $# -eq 0 && set -- "-h"
+  local ARCH=$DEFAULT_ARCH;
+  local REPO_URL=$DEFAULT_REPO_URL
+  while getopts "a:r:h" ARG; do
+    case "$ARG" in
+    a) ARCH=$OPTARG;;
+    r) REPO_URL=$OPTARG;;
+    *) usage; return 1;;
+    esac
+  done
+  shift $(($OPTIND-1))
+  test $# -eq 1 || { usage; return 1; }
+  
+  local DEST=$1
+  local REPO="${REPO_URL%/}/core/os/$ARCH"
+  debug "core repository: $REPO"
+  local PACKDIR=".arch-bootstrap-packages"
+
+  # Create directories
+  debug "package directory: $PACKDIR"
+  debug "destination directory: $DEST"
+  mkdir -p "$PACKDIR" "$DEST"
+
+  # Fetch packages, install and do a minimal system configuration
+  LIST=$(fetch_packages_list $ARCH $REPO "$PACKDIR")
+  fetch_packages "$PACKDIR" "$BASIC_PACKAGES" "$DEST" "$LIST"
   configure_pacman "$DEST" "$ARCH"
-
-  debug "re-install basic packages and install extra packages: ${EXTRA_PACKAGES[*]}"
   minimal_configuration "$DEST"
-  LC_ALL=C chroot "$DEST" /usr/bin/pacman --noconfirm --arch $ARCH \
-    -Sy --force ${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}
-
-  # Pacman must be re-configured
-  configure_pacman "$DEST" "$ARCH"
-
-  echo "Done! you can now chroot to the bootstrapped system."
+  install_packages "$ARCH" "$DEST" "$BASIC_PACKAGES" "$EXTRA_PACKAGES"
+  configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
+  
+  debug "done"
 }
 
 main "$@"
