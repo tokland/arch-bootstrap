@@ -12,7 +12,7 @@
 # Some examples:
 #
 #   # arch-bootstrap destination
-#   # arch-bootstrap -a x86_64 -r "ftp://ftp.archlinux.org" destination-x86_64 
+#   # arch-bootstrap -a x86_64 -r ftp://ftp.archlinux.org destination-x86_64 
 #
 # And then you can chroot to the destination directory (root/root):
 #
@@ -42,7 +42,7 @@ extract_href() { sed -n '/<a / s/^.*<a [^>]*href="\([^\"]*\)".*$/\1/p'; }
 # Simple wrapper around wget
 fetch() { wget -c --passive-ftp --quiet "$@"; }
 
-# Extract FILEPATH gz/xz archive to DEST directory 
+# Extract FILEPATH gz/xz archive to DEST directory
 uncompress() {
   local FILEPATH=$1 DEST=$2
   
@@ -107,14 +107,14 @@ install_pacman_packages() {
 }
 
 install_packages() {
-  local ARCH=$1 DEST=$2 BASIC_PACKAGES=$3 EXTRA_PACKAGES=$4
-  debug "install packages: $BASIC_PACKAGES $EXTRA_PACKAGES"
+  local ARCH=$1 DEST=$2 PACKAGES=$3
+  debug "install packages: $PACKAGES"
   LC_ALL=C chroot "$DEST" /usr/bin/pacman \
-    --noconfirm --arch $ARCH -Sy --force $BASIC_PACKAGES $EXTRA_PACKAGES
+    --noconfirm --arch $ARCH -Sy --force $PACKAGES
 }
 
 show_usage() {
-  stderr "show_usage: $(basename "$0") [-a i686|x86_64] [-r REPO_URL] DEST"
+  stderr "show_usage: $(basename "$0") [-a i686|x86_64] [-r REPO_URL] DIRECTORY"
 }
 
 main() {
@@ -147,7 +147,7 @@ main() {
   install_pacman_packages "${BASIC_PACKAGES[*]}" "$DEST" "$LIST" "$PACKDIR"
   configure_pacman "$DEST" "$ARCH"
   configure_minimal_system "$DEST"
-  install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]}" "${EXTRA_PACKAGES[*]}"
+  install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}"
   configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
   rm -rf "$PACKDIR"
   
