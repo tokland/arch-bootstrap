@@ -28,7 +28,7 @@ PACMAN_PACKAGES=(
 BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem)
 EXTRA_PACKAGES=(coreutils bash grep gawk file tar systemd)
 DEFAULT_REPO_URL="http://mirrors.kernel.org/archlinux"
-DEFAULT_ARCH="i686"
+DEFAULT_ARCH=`uname -m`
 
 # Output to standard error
 stderr() { echo "$@" >&2; }
