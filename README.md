@@ -26,8 +26,9 @@ Once the process has finished, chroot to the destination directory (default user
 
     # chroot destination
 
-Note that some packages may need system directories mounted. If that's the case:
+Note that some packages require some system directories to be mounted. Some of the commands you can try:
 
     # mount --bind /proc myarch/proc
     # mount --bind /sys myarch/sys
     # mount --bind /dev myarch/dev
+    # mount --bind /dev/pts myarch/dev/pts
