@@ -11,7 +11,7 @@ Install
 Examples
 =========
 
-Create a base arch distribution in directory 'myarch' (i686 arch by default):
+Create a base arch distribution in directory 'myarch' (currently running arch by default):
 
     # arch-bootstrap myarch
    
