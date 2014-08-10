@@ -32,3 +32,8 @@ Note that some packages require some system directories to be mounted. Some of t
     # mount --bind /sys myarch/sys
     # mount --bind /dev myarch/dev
     # mount --bind /dev/pts myarch/dev/pts
+    
+License
+=======
+
+This project is licensed under the terms of the MIT license
