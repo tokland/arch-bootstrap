@@ -24,6 +24,7 @@ set -e -u -o pipefail
 PACMAN_PACKAGES=(
   acl archlinux-keyring attr bzip2 curl expat glibc gpgme libarchive
   libassuan libgpg-error libssh2 lzo2 openssl pacman pacman-mirrorlist xz zlib
+  krb5 e2fsprogs keyutils
 )
 BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem)
 EXTRA_PACKAGES=(coreutils bash grep gawk file tar systemd)
