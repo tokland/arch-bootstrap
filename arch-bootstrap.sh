@@ -9,10 +9,10 @@
 #
 #   # install -m 755 arch-bootstrap.sh /usr/local/bin/arch-bootstrap
 #
-# Some examples:
+# Usage:
 #
 #   # arch-bootstrap destination
-#   # arch-bootstrap -a x86_64 -r ftp://ftp.archlinux.org destination-x86_64 
+#   # arch-bootstrap -a x86_64 -r ftp://ftp.archlinux.org destination 
 #
 # And then you can chroot to the destination directory (root/root):
 #
@@ -31,19 +31,22 @@ EXTRA_PACKAGES=(coreutils bash grep gawk file tar systemd)
 DEFAULT_REPO_URL="http://mirrors.kernel.org/archlinux"
 DEFAULT_ARCH=`uname -m`
 
-# Output to standard error
-stderr() { echo "$@" >&2; }
+stderr() { 
+  echo "$@" >&2 
+}
 
-# Output debug message to standard error
-debug() { stderr "--- $@"; }
+debug() {
+  stderr "--- $@"
+}
 
-# Extract href attribute from HTML link
-extract_href() { sed -n '/<a / s/^.*<a [^>]*href="\([^\"]*\)".*$/\1/p'; }
+extract_href() {
+  sed -n '/<a / s/^.*<a [^>]*href="\([^\"]*\)".*$/\1/p'
+}
 
-# Simple wrapper around wget
-fetch() { wget -c --passive-ftp --quiet "$@"; }
+fetch() {
+  wget -c --passive-ftp --quiet "$@" 
+}
 
-# Extract FILEPATH gz/xz archive to DEST directory
 uncompress() {
   local FILEPATH=$1 DEST=$2
   
@@ -115,7 +118,7 @@ install_packages() {
 }
 
 show_usage() {
-  stderr "show_usage: $(basename "$0") [-a i686|x86_64] [-r REPO_URL] DIRECTORY"
+  stderr "show_usage: $(basename "$0") [-a i686|x86_64] [-r REPO_URL] DESTDIR"
 }
 
 main() {
@@ -142,7 +145,7 @@ main() {
   debug "core repository: $REPO"
   debug "temporary directory: $PACKDIR"
   
-  # Fetch packages, install and do a minimal system configuration
+  # Fetch packages, install system and do a minimal configuration
   mkdir -p "$DEST"
   local LIST=$(fetch_packages_list $REPO)
   install_pacman_packages "${BASIC_PACKAGES[*]}" "$DEST" "$LIST" "$PACKDIR"
