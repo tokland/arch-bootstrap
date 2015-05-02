@@ -110,6 +110,14 @@ install_pacman_packages() {
   done
 }
 
+configure_static_qemu() {
+  local ARCH=$1 DEST=$2
+  QEMU_STATIC_BIN=$(which qemu-$ARCH-static || echo )
+  [[ -e "$QEMU_STATIC_BIN" ]] ||\
+    { debug "no static qemu for $ARCH, ignoring"; return 0; }
+  cp "$QEMU_STATIC_BIN" "$DEST/usr/bin"
+}
+
 install_packages() {
   local ARCH=$1 DEST=$2 PACKAGES=$3
   debug "install packages: $PACKAGES"
@@ -118,7 +126,7 @@ install_packages() {
 }
 
 show_usage() {
-  stderr "show_usage: $(basename "$0") [-a i686|x86_64] [-r REPO_URL] DESTDIR"
+  stderr "show_usage: $(basename "$0") [-q] [-a i686|x86_64] [-r REPO_URL] DESTDIR"
 }
 
 main() {
@@ -126,11 +134,13 @@ main() {
   test $# -eq 0 && set -- "-h"
   local ARCH=$DEFAULT_ARCH
   local REPO_URL=$DEFAULT_REPO_URL
+  local USE_QEMU=
   
-  while getopts "a:r:h" ARG; do
+  while getopts "qa:r:h" ARG; do
     case "$ARG" in
       a) ARCH=$OPTARG;;
       r) REPO_URL=$OPTARG;;
+      q) USE_QEMU=true;;
       *) show_usage; return 1;;
     esac
   done
@@ -151,6 +161,9 @@ main() {
   install_pacman_packages "${BASIC_PACKAGES[*]}" "$DEST" "$LIST" "$PACKDIR"
   configure_pacman "$DEST" "$ARCH"
   configure_minimal_system "$DEST"
+  if [[ -n "$USE_QEMU" ]]; then
+    configure_static_qemu "$ARCH" "$DEST"
+  fi
   install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}"
   configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
   rm -rf "$PACKDIR"
