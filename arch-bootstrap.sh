@@ -24,7 +24,7 @@ set -e -u -o pipefail
 PACMAN_PACKAGES=(
   acl archlinux-keyring attr bzip2 curl expat glibc gpgme libarchive
   libassuan libgpg-error libssh2 lzo openssl pacman pacman-mirrorlist xz zlib
-  krb5 e2fsprogs keyutils libidn
+  krb5 e2fsprogs keyutils libidn gcc-libs
 )
 BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem)
 EXTRA_PACKAGES=(coreutils bash grep gawk file tar systemd)
@@ -59,12 +59,45 @@ uncompress() {
 }  
 
 ###
+get_default_repo() {
+  local ARCH=$1
+  if [[ x"$ARCH" != xarm ]]; then
+    local DEFAULT_REPO="http://mirrors.kernel.org/archlinux"
+  else
+    local DEFAULT_REPO="http://mirror.archlinuxarm.org"
+  fi
+
+  echo "$DEFAULT_REPO"
+}
+
+get_core_repo_url() {
+  local REPO_URL=$1 ARCH=$2
+  if [[ x"$ARCH" != xarm ]]; then
+    local REPO="${REPO_URL%/}/core/os/$ARCH"
+  else
+    local REPO="${REPO_URL%/}/$ARCH/core"
+  fi
+
+  echo "$REPO"
+}
+
+get_template_repo_url() {
+  local REPO_URL=$1 ARCH=$2
+  if [[ x"$ARCH" != xarm ]]; then
+    local REPO="${REPO_URL%/}/\$repo/os/$ARCH"
+  else
+    local REPO="${REPO_URL%/}/$ARCH"
+  fi
+
+  echo "$REPO"
+}
 
 configure_pacman() {
   local DEST=$1 ARCH=$2
   debug "configure DNS and pacman"
   cp "/etc/resolv.conf" "$DEST/etc/resolv.conf"
-  echo "Server = $REPO_URL/\$repo/os/$ARCH" >> "$DEST/etc/pacman.d/mirrorlist"
+  SERVER=$(get_template_repo_url "$REPO_URL" "$ARCH")
+  echo "Server = $SERVER" >> "$DEST/etc/pacman.d/mirrorlist"
 }
 
 configure_minimal_system() {
@@ -126,14 +159,14 @@ install_packages() {
 }
 
 show_usage() {
-  stderr "show_usage: $(basename "$0") [-q] [-a i686|x86_64] [-r REPO_URL] [-d DOWNLOAD_DIR] DESTDIR"
+  stderr "show_usage: $(basename "$0") [-a i686|x86_64|arm] [-r REPO_URL] [-d DOWNLOAD_DIR] DESTDIR"
 }
 
 main() {
   # Process arguments and options
   test $# -eq 0 && set -- "-h"
-  local ARCH=$DEFAULT_ARCH
-  local REPO_URL=$DEFAULT_REPO_URL
+  local ARCH=
+  local REPO_URL=
   local USE_QEMU=
   local DOWNLOAD_DIR=
   local PRESERVE_DOWNLOAD_DIR=
@@ -150,8 +183,11 @@ main() {
   shift $(($OPTIND-1))
   test $# -eq 1 || { show_usage; return 1; }
   
+  [[ -z "$ARCH" ]] && ARCH=$DEFAULT_ARCH
+  [[ -z "$REPO_URL" ]] &&REPO_URL=`get_default_repo "$ARCH"`
+  
   local DEST=$1
-  local REPO="${REPO_URL%/}/core/os/$ARCH"
+  local REPO=$(get_core_repo_url "$REPO_URL" "$ARCH")
   [[ -z "$DOWNLOAD_DIR" ]] && DOWNLOAD_DIR=$(mktemp -d)
   mkdir -p "$DOWNLOAD_DIR"
   [[ -z "$PRESERVE_DOWNLOAD_DIR" ]] && trap "rm -rf '$DOWNLOAD_DIR'" KILL TERM EXIT
