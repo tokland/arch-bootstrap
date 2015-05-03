@@ -95,13 +95,13 @@ fetch_packages_list() {
 }
 
 install_pacman_packages() {
-  local BASIC_PACKAGES=$1 DEST=$2 LIST=$3 PACKDIR=$4
+  local BASIC_PACKAGES=$1 DEST=$2 LIST=$3 DOWNLOAD_DIR=$4
   debug "pacman package and dependencies: $BASIC_PACKAGES"
   
   for PACKAGE in $BASIC_PACKAGES; do
     local FILE=$(echo "$LIST" | grep -m1 "^$PACKAGE-[[:digit:]].*\(\.gz\|\.xz\)$")
     test "$FILE" || { debug "Error: cannot find package: $PACKAGE"; return 1; }
-    local FILEPATH="$PACKDIR/$FILE"
+    local FILEPATH="$DOWNLOAD_DIR/$FILE"
     
     debug "download package: $REPO/$FILE"
     fetch -O "$FILEPATH" "$REPO/$FILE"
@@ -118,7 +118,7 @@ install_packages() {
 }
 
 show_usage() {
-  stderr "show_usage: $(basename "$0") [-a i686|x86_64] [-r REPO_URL] DESTDIR"
+  stderr "show_usage: $(basename "$0") [-a i686|x86_64] [-r REPO_URL] [-d DOWNLOAD_DIR] DESTDIR"
 }
 
 main() {
@@ -126,11 +126,14 @@ main() {
   test $# -eq 0 && set -- "-h"
   local ARCH=$DEFAULT_ARCH
   local REPO_URL=$DEFAULT_REPO_URL
+  local DOWNLOAD_DIR=
+  local PRESERVE_DOWNLOAD_DIR=
   
-  while getopts "a:r:h" ARG; do
+  while getopts "a:r:d:h" ARG; do
     case "$ARG" in
       a) ARCH=$OPTARG;;
       r) REPO_URL=$OPTARG;;
+      d) DOWNLOAD_DIR=$OPTARG; PRESERVE_DOWNLOAD_DIR=true;;
       *) show_usage; return 1;;
     esac
   done
@@ -139,21 +142,22 @@ main() {
   
   local DEST=$1
   local REPO="${REPO_URL%/}/core/os/$ARCH"
-  local PACKDIR=$(mktemp -d)
-  trap "rm -rf '$PACKDIR'" KILL TERM EXIT
+  [[ -z "$DOWNLOAD_DIR" ]] && DOWNLOAD_DIR=$(mktemp -d)
+  mkdir -p "$DOWNLOAD_DIR"
+  [[ -z "$PRESERVE_DOWNLOAD_DIR" ]] && trap "rm -rf '$DOWNLOAD_DIR'" KILL TERM EXIT
   debug "destination directory: $DEST"
   debug "core repository: $REPO"
-  debug "temporary directory: $PACKDIR"
+  debug "temporary directory: $DOWNLOAD_DIR"
   
   # Fetch packages, install system and do a minimal configuration
   mkdir -p "$DEST"
   local LIST=$(fetch_packages_list $REPO)
-  install_pacman_packages "${BASIC_PACKAGES[*]}" "$DEST" "$LIST" "$PACKDIR"
+  install_pacman_packages "${BASIC_PACKAGES[*]}" "$DEST" "$LIST" "$DOWNLOAD_DIR"
   configure_pacman "$DEST" "$ARCH"
   configure_minimal_system "$DEST"
   install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}"
   configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
-  rm -rf "$PACKDIR"
+  [[ -z "$PRESERVE_DOWNLOAD_DIR" ]] && rm -rf "$DOWNLOAD_DIR"
   
   debug "done"
 }
