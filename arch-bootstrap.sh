@@ -29,7 +29,7 @@ PACMAN_PACKAGES=(
 BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem)
 EXTRA_PACKAGES=(coreutils bash grep gawk file tar systemd)
 DEFAULT_REPO_URL="http://mirrors.kernel.org/archlinux"
-DEFAULT_ARCH=`uname -m`
+DEFAULT_ARM_REPO_URL="http://mirror.archlinuxarm.org"
 
 stderr() { 
   echo "$@" >&2 
@@ -62,23 +62,19 @@ uncompress() {
 get_default_repo() {
   local ARCH=$1
   if [[ x"$ARCH" != xarm ]]; then
-    local DEFAULT_REPO="http://mirrors.kernel.org/archlinux"
+    echo $DEFAULT_REPO_URL
   else
-    local DEFAULT_REPO="http://mirror.archlinuxarm.org"
+    echo $DEFAULT_ARM_REPO_URL
   fi
-
-  echo "$DEFAULT_REPO"
 }
 
 get_core_repo_url() {
   local REPO_URL=$1 ARCH=$2
   if [[ x"$ARCH" != xarm ]]; then
-    local REPO="${REPO_URL%/}/core/os/$ARCH"
+    echo "${REPO_URL%/}/core/os/$ARCH"
   else
-    local REPO="${REPO_URL%/}/$ARCH/core"
+    echo "${REPO_URL%/}/$ARCH/core"
   fi
-
-  echo "$REPO"
 }
 
 get_template_repo_url() {
@@ -183,8 +179,8 @@ main() {
   shift $(($OPTIND-1))
   test $# -eq 1 || { show_usage; return 1; }
   
-  [[ -z "$ARCH" ]] && ARCH=$DEFAULT_ARCH
-  [[ -z "$REPO_URL" ]] &&REPO_URL=`get_default_repo "$ARCH"`
+  [[ -z "$ARCH" ]] && ARCH=$(uname -m)
+  [[ -z "$REPO_URL" ]] &&REPO_URL=$(get_default_repo "$ARCH")
   
   local DEST=$1
   local REPO=$(get_core_repo_url "$REPO_URL" "$ARCH")
