@@ -44,7 +44,7 @@ extract_href() {
 }
 
 fetch() {
-  wget -c --passive-ftp --quiet "$@" 
+  curl -s "$@"
 }
 
 uncompress() {
@@ -119,7 +119,7 @@ fetch_packages_list() {
   
   debug "fetch packages list: $REPO/"
   # Force trailing '/' needed by FTP servers.
-  fetch -O - "$REPO/" | extract_href | awk -F"/" '{print $NF}' | sort -rn ||
+  fetch "$REPO/" | extract_href | awk -F"/" '{print $NF}' | sort -rn ||
     { debug "Error: cannot fetch packages list: $REPO"; return 1; }
 }
 
@@ -133,7 +133,7 @@ install_pacman_packages() {
     local FILEPATH="$DOWNLOAD_DIR/$FILE"
     
     debug "download package: $REPO/$FILE"
-    fetch -O "$FILEPATH" "$REPO/$FILE"
+    fetch -o "$FILEPATH" "$REPO/$FILE"
     debug "uncompress package: $FILEPATH"
     uncompress "$FILEPATH" "$DEST"
   done
