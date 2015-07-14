@@ -12,9 +12,9 @@
 # Usage:
 #
 #   # arch-bootstrap destination
-#   # arch-bootstrap -a x86_64 -r ftp://ftp.archlinux.org destination 
+#   # arch-bootstrap -a x86_64 -r ftp://ftp.archlinux.org destination-64
 #
-# And then you can chroot to the destination directory (root/root):
+# And then you can chroot to the destination directory (user: root, password: root):
 #
 #   # chroot destination
 
@@ -80,12 +80,10 @@ get_core_repo_url() {
 get_template_repo_url() {
   local REPO_URL=$1 ARCH=$2
   if [[ x"$ARCH" != xarm ]]; then
-    local REPO="${REPO_URL%/}/\$repo/os/$ARCH"
+    echo "${REPO_URL%/}/\$repo/os/$ARCH"
   else
-    local REPO="${REPO_URL%/}/$ARCH"
+    echo "${REPO_URL%/}/$ARCH"
   fi
-
-  echo "$REPO"
 }
 
 configure_pacman() {
@@ -118,7 +116,6 @@ fetch_packages_list() {
   local REPO=$1 
   
   debug "fetch packages list: $REPO/"
-  # Force trailing '/' needed by FTP servers.
   fetch "$REPO/" | extract_href | awk -F"/" '{print $NF}' | sort -rn ||
     { debug "Error: cannot fetch packages list: $REPO"; return 1; }
 }
@@ -155,7 +152,7 @@ install_packages() {
 }
 
 show_usage() {
-  stderr "show_usage: $(basename "$0") [-a i686|x86_64|arm] [-r REPO_URL] [-d DOWNLOAD_DIR] DESTDIR"
+  stderr "Usage: $(basename "$0") [-q] [-a i686|x86_64|arm] [-r REPO_URL] [-d DOWNLOAD_DIR] DESTDIR"
 }
 
 main() {
@@ -165,14 +162,13 @@ main() {
   local REPO_URL=
   local USE_QEMU=
   local DOWNLOAD_DIR=
-  local PRESERVE_DOWNLOAD_DIR=
   
   while getopts "qa:r:d:h" ARG; do
     case "$ARG" in
       a) ARCH=$OPTARG;;
       r) REPO_URL=$OPTARG;;
       q) USE_QEMU=true;;
-      d) DOWNLOAD_DIR=$OPTARG; PRESERVE_DOWNLOAD_DIR=true;;
+      d) DOWNLOAD_DIR=$OPTARG;;
       *) show_usage; return 1;;
     esac
   done
@@ -186,7 +182,7 @@ main() {
   local REPO=$(get_core_repo_url "$REPO_URL" "$ARCH")
   [[ -z "$DOWNLOAD_DIR" ]] && DOWNLOAD_DIR=$(mktemp -d)
   mkdir -p "$DOWNLOAD_DIR"
-  [[ -z "$PRESERVE_DOWNLOAD_DIR" ]] && trap "rm -rf '$DOWNLOAD_DIR'" KILL TERM EXIT
+  [[ "$DOWNLOAD_DIR" ]] && trap "rm -rf '$DOWNLOAD_DIR'" KILL TERM EXIT
   debug "destination directory: $DEST"
   debug "core repository: $REPO"
   debug "temporary directory: $DOWNLOAD_DIR"
@@ -197,12 +193,10 @@ main() {
   install_pacman_packages "${BASIC_PACKAGES[*]}" "$DEST" "$LIST" "$DOWNLOAD_DIR"
   configure_pacman "$DEST" "$ARCH"
   configure_minimal_system "$DEST"
-  if [[ -n "$USE_QEMU" ]]; then
-    configure_static_qemu "$ARCH" "$DEST"
-  fi
+  [[ -n "$USE_QEMU" ]] && configure_static_qemu "$ARCH" "$DEST"
   install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}"
   configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
-  [[ -z "$PRESERVE_DOWNLOAD_DIR" ]] && rm -rf "$DOWNLOAD_DIR"
+  [[ "$DOWNLOAD_DIR" ]] && rm -rf "$DOWNLOAD_DIR"
   
   debug "done"
 }
