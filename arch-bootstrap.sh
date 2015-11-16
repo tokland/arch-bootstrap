@@ -61,28 +61,28 @@ uncompress() {
 ###
 get_default_repo() {
   local ARCH=$1
-  if [[ x"$ARCH" != xarm ]]; then
-    echo $DEFAULT_REPO_URL
-  else
+  if [[ "$ARCH" == arm* ]]; then
     echo $DEFAULT_ARM_REPO_URL
+  else
+    echo $DEFAULT_REPO_URL
   fi
 }
 
 get_core_repo_url() {
   local REPO_URL=$1 ARCH=$2
-  if [[ x"$ARCH" != xarm ]]; then
-    echo "${REPO_URL%/}/core/os/$ARCH"
-  else
+  if [[ "$ARCH" == arm* ]]; then
     echo "${REPO_URL%/}/$ARCH/core"
+  else
+    echo "${REPO_URL%/}/core/os/$ARCH"
   fi
 }
 
 get_template_repo_url() {
   local REPO_URL=$1 ARCH=$2
-  if [[ x"$ARCH" != xarm ]]; then
-    echo "${REPO_URL%/}/\$repo/os/$ARCH"
-  else
+  if [[ "$ARCH" == arm* ]]; then
     echo "${REPO_URL%/}/$ARCH"
+  else
+    echo "${REPO_URL%/}/\$repo/os/$ARCH"
   fi
 }
 
@@ -138,6 +138,7 @@ install_pacman_packages() {
 
 configure_static_qemu() {
   local ARCH=$1 DEST=$2
+  [[ "$ARCH" == arm* ]] && ARCH=arm
   QEMU_STATIC_BIN=$(which qemu-$ARCH-static || echo )
   [[ -e "$QEMU_STATIC_BIN" ]] ||\
     { debug "no static qemu for $ARCH, ignoring"; return 0; }
