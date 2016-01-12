@@ -44,7 +44,7 @@ extract_href() {
 }
 
 fetch() {
-  curl -s "$@"
+  curl -L -s "$@"
 }
 
 uncompress() {
