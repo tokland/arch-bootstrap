@@ -47,6 +47,12 @@ fetch() {
   curl -L -s "$@"
 }
 
+fetch_file() {
+  local FILEPATH=$1
+  shift
+  curl -z "$FILEPATH" -o "$FILEPATH" -L "$@"
+}
+
 uncompress() {
   local FILEPATH=$1 DEST=$2
   
@@ -130,7 +136,7 @@ install_pacman_packages() {
     local FILEPATH="$DOWNLOAD_DIR/$FILE"
     
     debug "download package: $REPO/$FILE"
-    fetch -o "$FILEPATH" "$REPO/$FILE"
+    fetch_file "$FILEPATH" "$REPO/$FILE"
     debug "uncompress package: $FILEPATH"
     uncompress "$FILEPATH" "$DEST"
   done
