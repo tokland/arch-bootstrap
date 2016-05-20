@@ -163,13 +163,15 @@ main() {
   local REPO_URL=
   local USE_QEMU=
   local DOWNLOAD_DIR=
+  local PRESERVE_DOWNLOAD_DIR=
   
   while getopts "qa:r:d:h" ARG; do
     case "$ARG" in
       a) ARCH=$OPTARG;;
       r) REPO_URL=$OPTARG;;
       q) USE_QEMU=true;;
-      d) DOWNLOAD_DIR=$OPTARG;;
+      d) DOWNLOAD_DIR=$OPTARG
+         PRESERVE_DOWNLOAD_DIR=true;;
       *) show_usage; return 1;;
     esac
   done
@@ -183,7 +185,7 @@ main() {
   local REPO=$(get_core_repo_url "$REPO_URL" "$ARCH")
   [[ -z "$DOWNLOAD_DIR" ]] && DOWNLOAD_DIR=$(mktemp -d)
   mkdir -p "$DOWNLOAD_DIR"
-  [[ "$DOWNLOAD_DIR" ]] && trap "rm -rf '$DOWNLOAD_DIR'" KILL TERM EXIT
+  [[ -z "$PRESERVE_DOWNLOAD_DIR" ]] && trap "rm -rf '$DOWNLOAD_DIR'" KILL TERM EXIT
   debug "destination directory: $DEST"
   debug "core repository: $REPO"
   debug "temporary directory: $DOWNLOAD_DIR"
@@ -197,7 +199,7 @@ main() {
   [[ -n "$USE_QEMU" ]] && configure_static_qemu "$ARCH" "$DEST"
   install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}"
   configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
-  [[ "$DOWNLOAD_DIR" ]] && rm -rf "$DOWNLOAD_DIR"
+  [[ -z "$PRESERVE_DOWNLOAD_DIR" ]] && rm -rf "$DOWNLOAD_DIR"
   
   debug "done"
 }
