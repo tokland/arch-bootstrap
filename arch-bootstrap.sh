@@ -50,7 +50,11 @@ fetch() {
 fetch_file() {
   local FILEPATH=$1
   shift
-  curl -z "$FILEPATH" -o "$FILEPATH" -L "$@"
+  if [[ -e "$FILEPATH" ]]; then
+    curl -L -z "$FILEPATH" -o "$FILEPATH" "$@"
+  else
+    curl -L -o "$FILEPATH" "$@"
+  fi
 }
 
 uncompress() {
