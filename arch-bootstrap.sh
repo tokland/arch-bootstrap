@@ -116,6 +116,8 @@ configure_minimal_system() {
   touch "$DEST/etc/group"
   echo "bootstrap" > "$DEST/etc/hostname"
   
+  rm -rf $DEST/etc/mtab
+  
   test -e "$DEST/etc/mtab" || echo "rootfs / rootfs rw 0 0" > "$DEST/etc/mtab"
   test -e "$DEST/dev/null" || mknod "$DEST/dev/null" c 1 3
   test -e "$DEST/dev/random" || mknod -m 0644 "$DEST/dev/random" c 1 8
