@@ -116,11 +116,6 @@ configure_minimal_system() {
   touch "$DEST/etc/group"
   echo "bootstrap" > "$DEST/etc/hostname"
   
-  test -e "$DEST/etc/mtab" || echo "rootfs / rootfs rw 0 0" > "$DEST/etc/mtab"
-  test -e "$DEST/dev/null" || mknod "$DEST/dev/null" c 1 3
-  test -e "$DEST/dev/random" || mknod -m 0644 "$DEST/dev/random" c 1 8
-  test -e "$DEST/dev/urandom" || mknod -m 0644 "$DEST/dev/urandom" c 1 9
-  
   sed -i "s/^[[:space:]]*\(CheckSpace\)/# \1/" "$DEST/etc/pacman.conf"
   sed -i "s/^[[:space:]]*SigLevel[[:space:]]*=.*$/SigLevel = Never/" "$DEST/etc/pacman.conf"
 }
@@ -214,7 +209,11 @@ main() {
   configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
   [[ -z "$PRESERVE_DOWNLOAD_DIR" ]] && rm -rf "$DOWNLOAD_DIR"
   
-  debug "done"
+  debug "Done"
+  debug "Note: To use the system you may need to mount some special fileystems:"
+  debug "  # mount -t proc proc $DEST/proc/"
+  debug "  # mount -t sysfs sys $DEST/sys/"
+  debug "  # mount -o bind /dev $DEST/dev/"
 }
 
 main "$@"
