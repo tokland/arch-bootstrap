@@ -209,11 +209,10 @@ main() {
   configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
   [[ -z "$PRESERVE_DOWNLOAD_DIR" ]] && rm -rf "$DOWNLOAD_DIR"
   
-  debug "Done"
-  debug "Note: To use the system you may need to mount some special fileystems:"
-  debug "  # mount -t proc proc $DEST/proc/"
-  debug "  # mount -t sysfs sys $DEST/sys/"
-  debug "  # mount -o bind /dev $DEST/dev/"
+  debug "Done!"
+  debug 
+  debug "You may now chroot or arch-chroot from package arch-install-scripts:"
+  debug "$ sudo arch-chroot $DEST"
 }
 
 main "$@"
