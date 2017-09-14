@@ -75,7 +75,7 @@ uncompress() {
 
 get_default_repo() {
   local ARCH=$1
-  if [[ "$ARCH" == arm* ]]; then
+  if [[ "$ARCH" == arm* || "$ARCH" == aarch64 ]]; then
     echo $DEFAULT_ARM_REPO_URL
   else
     echo $DEFAULT_REPO_URL
@@ -84,7 +84,7 @@ get_default_repo() {
 
 get_core_repo_url() {
   local REPO_URL=$1 ARCH=$2
-  if [[ "$ARCH" == arm* ]]; then
+  if [[ "$ARCH" == arm* || "$ARCH" == aarch64 ]]; then
     echo "${REPO_URL%/}/$ARCH/core"
   else
     echo "${REPO_URL%/}/core/os/$ARCH"
@@ -93,7 +93,7 @@ get_core_repo_url() {
 
 get_template_repo_url() {
   local REPO_URL=$1 ARCH=$2
-  if [[ "$ARCH" == arm* ]]; then
+  if [[ "$ARCH" == arm* || "$ARCH" == aarch64 ]]; then
     echo "${REPO_URL%/}/$ARCH"
   else
     echo "${REPO_URL%/}/\$repo/os/$ARCH"
