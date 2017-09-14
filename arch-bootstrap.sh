@@ -94,7 +94,7 @@ get_core_repo_url() {
 get_template_repo_url() {
   local REPO_URL=$1 ARCH=$2
   if [[ "$ARCH" == arm* || "$ARCH" == aarch64 ]]; then
-    echo "${REPO_URL%/}/$ARCH"
+    echo "${REPO_URL%/}/$ARCH/\$repo"
   else
     echo "${REPO_URL%/}/\$repo/os/$ARCH"
   fi
@@ -105,7 +105,7 @@ configure_pacman() {
   debug "configure DNS and pacman"
   cp "/etc/resolv.conf" "$DEST/etc/resolv.conf"
   SERVER=$(get_template_repo_url "$REPO_URL" "$ARCH")
-  echo "Server = $SERVER" >> "$DEST/etc/pacman.d/mirrorlist"
+  echo "Server = $SERVER" > "$DEST/etc/pacman.d/mirrorlist"
 }
 
 configure_minimal_system() {
