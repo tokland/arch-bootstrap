@@ -30,6 +30,7 @@ BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem)
 EXTRA_PACKAGES=(coreutils bash grep gawk file tar systemd sed)
 DEFAULT_REPO_URL="http://mirrors.kernel.org/archlinux"
 DEFAULT_ARM_REPO_URL="http://mirror.archlinuxarm.org"
+DEFAULT_I686_REPO_URL="https://mirror.archlinux32.org"
 
 stderr() { 
   echo "$@" >&2 
@@ -77,6 +78,8 @@ get_default_repo() {
   local ARCH=$1
   if [[ "$ARCH" == arm* || "$ARCH" == aarch64 ]]; then
     echo $DEFAULT_ARM_REPO_URL
+  elif [[ "$ARCH" == i686 ]]; then
+    echo $DEFAULT_I686_REPO_URL
   else
     echo $DEFAULT_REPO_URL
   fi
@@ -84,7 +87,7 @@ get_default_repo() {
 
 get_core_repo_url() {
   local REPO_URL=$1 ARCH=$2
-  if [[ "$ARCH" == arm* || "$ARCH" == aarch64 ]]; then
+  if [[ "$ARCH" == arm* || "$ARCH" == aarch64 || "$ARCH" == i686 ]]; then
     echo "${REPO_URL%/}/$ARCH/core"
   else
     echo "${REPO_URL%/}/core/os/$ARCH"
@@ -93,7 +96,7 @@ get_core_repo_url() {
 
 get_template_repo_url() {
   local REPO_URL=$1 ARCH=$2
-  if [[ "$ARCH" == arm* || "$ARCH" == aarch64 ]]; then
+  if [[ "$ARCH" == arm* || "$ARCH" == aarch64 || "$ARCH" == i686 ]]; then
     echo "${REPO_URL%/}/$ARCH/\$repo"
   else
     echo "${REPO_URL%/}/\$repo/os/$ARCH"
