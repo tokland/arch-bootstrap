@@ -17,8 +17,13 @@ pkgbuild_dependencies() {
   done | grep -v "$EXCLUDE"
 }
 
-# Main
-{ 
-  shared_dependencies "/usr/bin/pacman"
-  pkgbuild_dependencies "/var/abs/core/pacman/PKGBUILD" "bash"
-} | sort -u | xargs
+main() {
+  path="pacman-PKGBUILD"
+  curl "https://git.archlinux.org/svntogit/packages.git/plain/trunk/PKGBUILD?h=packages/pacman" > $path
+  {
+    shared_dependencies "/usr/bin/pacman"
+    pkgbuild_dependencies "$path" "bash"
+  } | sort -u | xargs
+}
+
+main
