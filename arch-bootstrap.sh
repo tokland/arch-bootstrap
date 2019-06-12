@@ -62,10 +62,10 @@ uncompress() {
   local FILEPATH=$1 DEST=$2
   
   case "$FILEPATH" in
-    *.gz) 
-      tar xzf "$FILEPATH" -C "$DEST";;
-    *.xz) 
-      xz -dc "$FILEPATH" | tar x -C "$DEST";;
+    *.gz)
+      tar xzf "$FILEPATH" -C "$DEST";
+    *.xz)
+      xz -dc "$FILEPATH" | tar x -C "$DEST" 2> /dev/null;;
     *) 
       debug "Error: unknown package format: $FILEPATH"
       return 1;;
