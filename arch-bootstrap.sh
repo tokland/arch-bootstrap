@@ -26,7 +26,7 @@ PACMAN_PACKAGES=(
   krb5 libarchive libassuan libgpg-error libidn2 libnghttp2 libpsl libssh2
   libunistring lz4 openssl pacman pacman-mirrorlist xz zlib zstd
 )
-BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem)
+BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} ca-certificates ca-certificates-utils filesystem)
 EXTRA_PACKAGES=(coreutils bash grep gawk file tar systemd sed)
 DEFAULT_REPO_URL="http://mirrors.kernel.org/archlinux"
 DEFAULT_ARM_REPO_URL="http://mirror.archlinuxarm.org"
@@ -109,6 +109,12 @@ configure_pacman() {
   cp "/etc/resolv.conf" "$DEST/etc/resolv.conf"
   SERVER=$(get_template_repo_url "$REPO_URL" "$ARCH")
   echo "Server = $SERVER" > "$DEST/etc/pacman.d/mirrorlist"
+  mkdir -p "$DEST/etc/ca-certificates/extracted/"
+  CA_CERTIFICATE="tls-ca-bundle.pem"
+  if test -e $CA_CERTIFICATE; then
+    debug "Copy certificate file: $CA_CERTIFICATE"
+    cp $CA_CERTIFICATE "$DEST/etc/ca-certificates/extracted/"
+  fi
 }
 
 configure_minimal_system() {
