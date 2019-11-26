@@ -163,7 +163,7 @@ install_packages() {
   local ARCH=$1 DEST=$2 PACKAGES=$3
   debug "install packages: $PACKAGES"
   LC_ALL=C chroot "$DEST" /usr/bin/pacman \
-    --noconfirm --arch $ARCH -Sy --force $PACKAGES
+    --noconfirm --arch $ARCH -Sy --overwrite \* $PACKAGES
 }
 
 show_usage() {
