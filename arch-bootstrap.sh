@@ -2,7 +2,7 @@
 #
 # arch-bootstrap: Bootstrap a base Arch Linux system using any GNU distribution.
 #
-# Dependencies: bash >= 4, coreutils, wget, sed, gawk, tar, gzip, chroot, xz.
+# Dependencies: bash >= 4, coreutils, wget, sed, gawk, tar, gzip, chroot, xz, zstd.
 # Project: https://github.com/tokland/arch-bootstrap
 #
 # Install:
@@ -65,7 +65,9 @@ uncompress() {
       tar xzf "$FILEPATH" -C "$DEST";;
     *.xz) 
       xz -dc "$FILEPATH" | tar x -C "$DEST";;
-    *) 
+    *.zst)
+      zstd -dc "$FILEPATH" | tar x -C "$DEST";;
+    *)
       debug "Error: unknown package format: $FILEPATH"
       return 1;;
   esac
@@ -139,7 +141,7 @@ install_pacman_packages() {
   debug "pacman package and dependencies: $BASIC_PACKAGES"
   
   for PACKAGE in $BASIC_PACKAGES; do
-    local FILE=$(echo "$LIST" | grep -m1 "^$PACKAGE-[[:digit:]].*\(\.gz\|\.xz\)$")
+    local FILE=$(echo "$LIST" | grep -m1 "^$PACKAGE-[[:digit:]].*\(\.gz\|\.xz\|\.zst\)$")
     test "$FILE" || { debug "Error: cannot find package: $PACKAGE"; return 1; }
     local FILEPATH="$DOWNLOAD_DIR/$FILE"
     
@@ -163,7 +165,7 @@ install_packages() {
   local ARCH=$1 DEST=$2 PACKAGES=$3
   debug "install packages: $PACKAGES"
   LC_ALL=C chroot "$DEST" /usr/bin/pacman \
-    --noconfirm --arch $ARCH -Sy --force $PACKAGES
+    --noconfirm --arch $ARCH -Sy --overwrite \* $PACKAGES
 }
 
 show_usage() {
