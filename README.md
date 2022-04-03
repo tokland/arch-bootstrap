@@ -22,7 +22,7 @@ The same but use arch x86_64 and a given repository source:
 Usage
 =====
 
-Once the process has finished, chroot to the destination directory (default user: root/root):
+Once the process has finished, chroot to the destination directory (default user: user/root):
 
     # chroot destination
 

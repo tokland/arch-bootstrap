@@ -14,7 +14,7 @@
 #   # arch-bootstrap destination
 #   # arch-bootstrap -a x86_64 -r ftp://ftp.archlinux.org destination-64
 #
-# And then you can chroot to the destination directory (user: root, password: root):
+# And then you can chroot to the destination directory (user: user, password: root, and no password in sudo):
 #
 #   # chroot destination
 
@@ -24,7 +24,7 @@ set -e -u -o pipefail
 PACMAN_PACKAGES=(
   acl archlinux-keyring attr brotli bzip2 curl expat glibc gpgme libarchive
   libassuan libgpg-error libnghttp2 libssh2 lzo openssl pacman pacman-mirrorlist xz zlib
-  krb5 e2fsprogs keyutils libidn2 libunistring gcc-libs lz4 libpsl icu libunistring zstd
+  krb5 e2fsprogs keyutils libidn2 libunistring gcc-libs lz4 libpsl icu libunistring zstd sudo
 )
 BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem)
 EXTRA_PACKAGES=(coreutils bash grep gawk file tar systemd sed)
@@ -169,7 +169,16 @@ install_packages() {
 }
 
 show_usage() {
-  stderr "Usage: $(basename "$0") [-q] [-a i686|x86_64|arm] [-r REPO_URL] [-d DOWNLOAD_DIR] DESTDIR"
+  stderr "Usage: $(basename "$0") [-u USER] [-q] [-a i686|x86_64|arm] [-r REPO_URL] [-d DOWNLOAD_DIR] DESTDIR"
+}
+
+add_user()
+{
+	local USER=$1
+	debug "add default user"
+	chroot "$DEST" useradd -m $USER
+	chroot "$DEST" usermod -aG wheel $USER
+	printf "\n%%wheel    ALL=(ALL) ALL\n$USER    ALL=(ALL) ALL\nDefaults:$USER    \x21authenticate\n" >> "$DEST/etc/sudoers"
 }
 
 main() {
@@ -180,10 +189,12 @@ main() {
   local USE_QEMU=
   local DOWNLOAD_DIR=
   local PRESERVE_DOWNLOAD_DIR=
+  local USER=user
   
-  while getopts "qa:r:d:h" ARG; do
+  while getopts "qa:r:d:h:u:" ARG; do
     case "$ARG" in
       a) ARCH=$OPTARG;;
+      u) USER=$OPTARG;;
       r) REPO_URL=$OPTARG;;
       q) USE_QEMU=true;;
       d) DOWNLOAD_DIR=$OPTARG
@@ -215,12 +226,13 @@ main() {
   [[ -n "$USE_QEMU" ]] && configure_static_qemu "$ARCH" "$DEST"
   install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}"
   configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
+  add_user $USER
   [[ -z "$PRESERVE_DOWNLOAD_DIR" ]] && rm -rf "$DOWNLOAD_DIR"
   
   debug "Done!"
   debug 
   debug "You may now chroot or arch-chroot from package arch-install-scripts:"
-  debug "$ sudo arch-chroot $DEST"
+  debug "$ sudo arch-chroot $DEST su $USER"
 }
 
 main "$@"
