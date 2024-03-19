@@ -30,6 +30,7 @@ BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem base)
 EXTRA_PACKAGES=(coreutils bash grep gawk file tar gzip systemd sed)
 DEFAULT_REPO_URL="http://mirrors.kernel.org/archlinux"
 DEFAULT_ARM_REPO_URL="http://mirror.archlinuxarm.org"
+DEFAULT_X86_REPO_URL="http://mirror.archlinux32.org"
 
 stderr() { 
   echo "$@" >&2 
@@ -79,6 +80,8 @@ get_default_repo() {
   local ARCH=$1
   if [[ "$ARCH" == arm* || "$ARCH" == aarch64 ]]; then
     echo $DEFAULT_ARM_REPO_URL
+  elif [[ "$ARCH" == i*86 || "$ARCH" == pentium4 ]]; then
+    echo $DEFAULT_X86_REPO_URL
   else
     echo $DEFAULT_REPO_URL
   fi
@@ -86,7 +89,7 @@ get_default_repo() {
 
 get_core_repo_url() {
   local REPO_URL=$1 ARCH=$2
-  if [[ "$ARCH" == arm* || "$ARCH" == aarch64 ]]; then
+  if [[ "$ARCH" == arm* || "$ARCH" == aarch64 || "$ARCH" == i*86 || "$ARCH" == pentium4 ]]; then
     echo "${REPO_URL%/}/$ARCH/core"
   else
     echo "${REPO_URL%/}/core/os/$ARCH"
@@ -95,7 +98,7 @@ get_core_repo_url() {
 
 get_template_repo_url() {
   local REPO_URL=$1 ARCH=$2
-  if [[ "$ARCH" == arm* || "$ARCH" == aarch64 ]]; then
+  if [[ "$ARCH" == arm* || "$ARCH" == aarch64 || "$ARCH" == i*86 || "$ARCH" == pentium4 ]]; then
     echo "${REPO_URL%/}/$ARCH/\$repo"
   else
     echo "${REPO_URL%/}/\$repo/os/$ARCH"
@@ -169,7 +172,7 @@ install_packages() {
 }
 
 show_usage() {
-  stderr "Usage: $(basename "$0") [-q] [-a i686|x86_64|arm|aarch64] [-r REPO_URL] [-d DOWNLOAD_DIR] DESTDIR"
+  stderr "Usage: $(basename "$0") [-q] [-a i486|i686|pentium4|x86_64|arm|aarch64] [-r REPO_URL] [-d DOWNLOAD_DIR] DESTDIR"
 }
 
 main() {
