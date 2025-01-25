@@ -24,7 +24,7 @@ set -e -u -o pipefail
 PACMAN_PACKAGES=(
   acl archlinux-keyring attr brotli bzip2 curl expat glibc gpgme libarchive
   libassuan libgpg-error libnghttp2 libnghttp3 libssh2 lzo openssl pacman pacman-mirrorlist xz zlib
-  krb5 e2fsprogs keyutils libidn2 libunistring gcc-libs lz4 libpsl icu libunistring zstd
+  krb5 e2fsprogs keyutils libidn2 libunistring gcc-libs lz4 libpsl icu libunistring zstd libxml2
 )
 BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem base)
 EXTRA_PACKAGES=(coreutils bash grep gawk file tar gzip systemd sed)
@@ -127,6 +127,7 @@ configure_minimal_system() {
   test -e "$DEST/dev/random" || mknod -m 0644 "$DEST/dev/random" c 1 8
   test -e "$DEST/dev/urandom" || mknod -m 0644 "$DEST/dev/urandom" c 1 9
 
+  sed -i 's/^DownloadUser/#DownloadUser/' "$DEST/etc/pacman.conf"
   sed -i "s/^[[:space:]]*\(CheckSpace\)/# \1/" "$DEST/etc/pacman.conf"
   sed -i "s/^[[:space:]]*SigLevel[[:space:]]*=.*$/SigLevel = Never/" "$DEST/etc/pacman.conf"
 }
